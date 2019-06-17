@@ -1,2 +1,2 @@
-# TonUINO-SDcard-Manager
-Autohotkey SD card manager for TonUINO
+# TonUINO-SDtool
+SD card manager for TonUINO
