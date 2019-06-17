@@ -9,7 +9,7 @@ Written in [Autohotkey](https://www.autohotkey.com) aka AHK
 
 ### Directly (no AHK required)
 
-1. Download **TinoTool.exe** from /bin.
+1. Download **TinoTool.exe** from /bin. (no installation required)
 2. Run it.
 
 ### Compile yourself (AHK required!)
