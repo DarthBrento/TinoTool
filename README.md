@@ -1,5 +1,5 @@
 # TinoTool
-SD card manager for [TonUINO](https://www.voss.earth/tonuino/) an arduino based music player
+SD card manager for [TonUINO](https://www.voss.earth/tonuino/) - an arduino based music player
 
 **Windows only**
 
