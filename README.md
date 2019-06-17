@@ -9,11 +9,11 @@ Written in [Autohotkey](https://www.autohotkey.com) aka AHK
 
 ### Directly (no AHK required)
 
-1. Download the [TinoTool.exe] from /bin.
+1. Download **TinoTool.exe** from /bin.
 2. Run it.
 
 ### Compile yourself (AHK required!)
 
-1. Download TinoTool.ahk.
+1. Download **TinoTool.ahk**.
 2. Compile it yourself.
 3. Run it.
