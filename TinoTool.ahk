@@ -16,7 +16,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-VERSION := "0.6.2"
+VERSION := "0.6.3"
 AUDIOPROMPT := "Please select the audio folder"
 
 ;; ***********
@@ -150,6 +150,7 @@ copyAudio:
 
 	Loop, % LV_GetCount()
 	{
+		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . nextFolder)
 		LV_GetText(srcFilename,A_Index)
 		filename := Format("{1:03}",A_Index)
 		if (WithFilename)
@@ -157,7 +158,6 @@ copyAudio:
 		filename .= ".mp3"
 
 		FileCopy, % AudioPath . "\" . srcFilename, % SDPath . "\" .  nextFolder . "\" . filename
-		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . nextFolder)
 	}
 
 	checkSDCard(SDPath)
