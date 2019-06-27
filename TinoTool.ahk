@@ -143,7 +143,6 @@ copyAudio:
 	Loop, Files, % AudioPath . "\*.mp3", F 
 	{
 		FileList .= A_LoopFileName . "`n"
-		filesC += 1
 	}
 	Sort, FileList
 
@@ -237,6 +236,7 @@ checkSDCard(SDPath)
 readFileList(AudioPath) 
 {
 	SB_SetText("Reading files")
+	LV_Delete()
 
 	Loop, Files, % AudioPath . "\*.mp3", F 
 	{
