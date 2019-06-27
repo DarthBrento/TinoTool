@@ -152,7 +152,6 @@ copyAudio:
 	Loop, % LV_GetCount()
 	{
 		LV_GetText(srcFilename,A_Index)
-		MsgBox, % srcFilename
 		filename := Format("{1:03}",A_Index)
 		if (WithFilename)
 			filename .= "-" . srcFilename
