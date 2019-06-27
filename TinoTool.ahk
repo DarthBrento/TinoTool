@@ -16,7 +16,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-VERSION := "0.6.1"
+VERSION := "0.6.2"
 AUDIOPROMPT := "Please select the audio folder"
 
 ;; ***********
@@ -50,7 +50,8 @@ if (AsAdmin && not A_IsAdmin)
 Gui, New, , TonUINO SD Card manager
 Gui, Add, Edit, w300 vSDPathEdit disabled, % SDPath
 Gui, Add, Button, gselectSDcard X+m, Select SD Card
-Gui, Add, Text, x10 vSDSpace w300, NA
+Gui, Add, Progress, w200 x10 h20 cBlue vSDSpaceProgress BackgroundAAAAAA, 
+Gui, Add, Text, x+m yp+5 vSDSpace w300, NA
 
 Gui, Add, Tab3, w520 x10 y+10, Copy|SD Check|Settings
 
@@ -226,10 +227,12 @@ checkSDCard(SDPath)
 		GuiControl, Hide, Errors
 	}
 
+	; Drive Space
 	DriveSpaceFree, freeSpace, % SDPath
 
 	DriveGet, cap, Capacity, % SDPath
 	GuiControl, , SDSpace, % Format("{1:.2f}",freespace/1024) . " GB of " . Format("{1:.2f}",cap/1024) . " GB available"
+	GuiControl, , SDSpaceProgress, % 100 - (freespace/cap) * 100
 }
 
 readFileList(AudioPath) 
