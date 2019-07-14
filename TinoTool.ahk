@@ -153,8 +153,12 @@ copyAudio:
 		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . nextFolder)
 		LV_GetText(srcFilename,A_Index)
 		filename := Format("{1:03}",A_Index)
-		if (WithFilename)
-			filename .= "-" . srcFilename
+		if (WithFilename) {
+repFN := StrReplace(srcFilename, "ä","ae")
+repFN := StrReplace(srcFilename, "ö","oe")
+repFN := StrReplace(srcFilename, "ü","ue")
+			filename .= "-" . repFN
+}
 		filename .= ".mp3"
 
 		FileCopy, % AudioPath . "\" . srcFilename, % SDPath . "\" .  nextFolder . "\" . filename
