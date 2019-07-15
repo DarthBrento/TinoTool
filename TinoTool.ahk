@@ -16,7 +16,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-VERSION := "0.6.3"
+VERSION := "0.7.0"
 AUDIOPROMPT := "Please select the audio folder"
 
 ;; ***********
@@ -29,6 +29,7 @@ IniRead, SDPath, % iniPath, % "User", % "SDpath", % "Please select the SD Card"
 IniRead, AudioPath, % iniPath, % "User", % "Audiopath", % AUDIOPROMPT
 IniRead, AsAdmin, % iniPath, % "User", % "AsAdmin", 0
 IniRead, WithFilename, % iniPath, % "User", % "WithFilename", 1
+IniRead, SmartRename, % iniPath, % "User", % "SmartRename", 1
 
 ;; ************
 ;; run as admin
@@ -46,7 +47,6 @@ if (AsAdmin && not A_IsAdmin)
 ;; GUI
 ;; ***
 
-
 Gui, New, , TonUINO SD Card manager
 Gui, Add, Edit, w300 vSDPathEdit disabled, % SDPath
 Gui, Add, Button, gselectSDcard X+m, Select SD Card
@@ -55,10 +55,11 @@ Gui, Add, Text, x+m yp+5 vSDSpace w300, NA
 
 Gui, Add, Tab3, w520 x10 y+10, Copy|SD Check|Settings
 
-Gui, Add, Edit, w300 vAudioPathEdit section x+5 y+5 disabled, % AudioPath
+Gui, Add, Edit, w380 vAudioPathEdit section x+5 y+5 disabled -Multi R1, % AudioPath
 Gui, Add, Button, gselectAudio X+m, Select Audio
 Gui, Add, Button, vCopyAudioBut gcopyAudio X20 Y+m, Copy Audio
 Gui, Add, Checkbox, vWithFilename checked%WithFilename% gSaveIni X+m, Append original filename to number 
+Gui, Add, Checkbox, vSmartRename checked%SmartRename% gSaveIni, Smart rename
 Gui, Add, Text, vNextFolder, Next folder: NA
 ; Gui, Add, DropDownList, vSortBy gSortByChange, Filename|Title|Track Number
 Gui, Font, bold
@@ -154,11 +155,12 @@ copyAudio:
 		LV_GetText(srcFilename,A_Index)
 		filename := Format("{1:03}",A_Index)
 		if (WithFilename) {
-repFN := StrReplace(srcFilename, "ä","ae")
-repFN := StrReplace(srcFilename, "ö","oe")
-repFN := StrReplace(srcFilename, "ü","ue")
+			repFN := RegExReplace(srcFilename,".mp3","")
+			if (SmartRename) {
+				repFN := smartRename(repFN)
+			} 
 			filename .= "-" . repFN
-}
+		}
 		filename .= ".mp3"
 
 		FileCopy, % AudioPath . "\" . srcFilename, % SDPath . "\" .  nextFolder . "\" . filename
@@ -168,6 +170,20 @@ repFN := StrReplace(srcFilename, "ü","ue")
 	GuiControl, -Disabled, CopyAudioBut
 	SB_SetText("ready")
 return
+
+smartRename(str)
+{
+	str := StrReplace(str, "ä","ae")
+	str := StrReplace(str, "ö","oe")
+	str := StrReplace(str, "ü","ue")
+	str := StrReplace(str, "ß","ss")
+	; remove leading digits
+	str := RegExReplace(str, "^\d+","")
+	; remove non word characters and convert to camelCase
+	str := RegExReplace(str, "i)(\W+)(\w)","$U2")
+
+	return str
+}
 
 nextFolder(SDPath)
 {
