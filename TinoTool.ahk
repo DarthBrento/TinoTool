@@ -16,7 +16,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-VERSION := "0.7.0"
+VERSION := "0.8.0"
 AUDIOPROMPT := "Please select the audio folder"
 
 ;; ***********
@@ -65,7 +65,8 @@ Gui, Add, Text, vNextFolder, Next folder: NA
 Gui, Font, bold
 Gui, Add, Text, , Order preview (Click header to reorder)
 Gui, Font,
-Gui, Add, ListView, xs r10 w500, Filename|Title|TrackNumber
+Gui, Add, Text, , (Doubleclick row to toggle copy/skip)
+Gui, Add, ListView, xs r10 w500 gLVClick AltSubmit, mode|Filename|Title|TrackNumber
 LV_ModifyCol(3, "Integer")
 
 Gui, Tab, SD
@@ -141,19 +142,22 @@ copyAudio:
 
 	filesC := LV_GetCount()
 
-	Loop, Files, % AudioPath . "\*.mp3", F 
-	{
-		FileList .= A_LoopFileName . "`n"
-	}
-	Sort, FileList
+	; Loop, Files, % AudioPath . "\*.mp3", F 
+	; {
+	; 	FileList .= A_LoopFileName . "`n"
+	; }
+	; Sort, FileList
 
 	srcFilename := ""
-
+	nid := 1
 	Loop, % LV_GetCount()
 	{
 		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . nextFolder)
-		LV_GetText(srcFilename,A_Index)
-		filename := Format("{1:03}",A_Index)
+		LV_GetText(mode,A_Index)
+		LV_GetText(srcFilename,A_Index,2)
+		if (mode = "skip")
+			continue
+		filename := Format("{1:03}",nid++)
 		if (WithFilename) {
 			repFN := RegExReplace(srcFilename,".mp3","")
 			if (SmartRename) {
@@ -169,6 +173,17 @@ copyAudio:
 	checkSDCard(SDPath)
 	GuiControl, -Disabled, CopyAudioBut
 	SB_SetText("ready")
+return
+
+LVClick:
+	If (A_GuiEvent = "A")
+	{
+		LV_GetText(mode, A_EventInfo,1)
+		If (mode = "copy")
+			LV_Modify(A_EventInfo, , "skip")
+		else
+			LV_Modify(A_EventInfo, , "copy")
+	}
 return
 
 smartRename(str)
@@ -260,7 +275,7 @@ readFileList(AudioPath)
 
 	Loop, Files, % AudioPath . "\*.mp3", F 
 	{
-		LV_Add("", A_LoopFileName, id3read(A_LoopFileFullPath,021),id3read(A_LoopFileFullPath,026))
+		LV_Add("", "copy", A_LoopFileName, id3read(A_LoopFileFullPath,021),id3read(A_LoopFileFullPath,026))
 	}
 	; auto-size
 	LV_ModifyCol()
