@@ -16,8 +16,9 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-VERSION := "0.8.0"
+VERSION := "0.9.0"
 AUDIOPROMPT := "Please select the audio folder"
+SDPROMPT := "Please select the SD Card"
 
 ;; ***********
 ;; init config
@@ -25,7 +26,7 @@ AUDIOPROMPT := "Please select the audio folder"
 
 iniPath := "settings.ini"
 
-IniRead, SDPath, % iniPath, % "User", % "SDpath", % "Please select the SD Card"
+IniRead, SDPath, % iniPath, % "User", % "SDpath", % SDPROMPT
 IniRead, AudioPath, % iniPath, % "User", % "Audiopath", % AUDIOPROMPT
 IniRead, AsAdmin, % iniPath, % "User", % "AsAdmin", 0
 IniRead, WithFilename, % iniPath, % "User", % "WithFilename", 1
@@ -60,8 +61,9 @@ Gui, Add, Button, gselectAudio X+m, Select Audio
 Gui, Add, Button, vCopyAudioBut gcopyAudio X20 Y+m, Copy Audio
 Gui, Add, Checkbox, vWithFilename checked%WithFilename% gSaveIni X+m, Append original filename to number 
 Gui, Add, Checkbox, vSmartRename checked%SmartRename% gSaveIni, Smart rename
-Gui, Add, Text, vNextFolder, Next folder: NA
-; Gui, Add, DropDownList, vSortBy gSortByChange, Filename|Title|Track Number
+Gui, Add, Text, vNextFolder, Copy to:
+Gui, Add, DropDownList, X+m Yp-3 vTargetFolder AltSubmit, New||01|02
+
 Gui, Font, bold
 Gui, Add, Text, , Order preview (Click header to reorder)
 Gui, Font,
@@ -88,6 +90,8 @@ Gui, Show, center autosize, TinoTool
 
 checkSDCard(SDPath)
 readFileList(AudioPath)
+
+targetFolder := 1
 return
 
 /*
@@ -103,7 +107,7 @@ return
 selectSDcard:
 	FileSelectFolder, SDPath , ::{20d04fe0-3aea-1069-a2d8-08002b30309d},2, Please select the SD Card
 	if (SDPath = "")
-		SDPath := "Please select the SD Card"
+		SDPath := SDPROMPT
 	GuiControl, , SDPathEdit, % SDPath 
 
 	IniWrite, % SDpath, % iniPath, % "User", % "SDpath"
@@ -136,8 +140,11 @@ copyAudio:
 	SB_SetText("Copying")
 
 	nextFolder := nextFolder(SDPath)
-	
-	FileCreateDir, % SDPath . "\" . nextFolder
+
+	targetFolderName := targetFoldertoPath(SDPath, targetFolder)
+	; MsgBox, % SDPath . "\" . targetFoldertoPath(SDPath, targetFolder)
+
+	FileCreateDir, % SDPath . "\" . targetFolderName
 	FileList := ""
 
 	filesC := LV_GetCount()
@@ -150,9 +157,17 @@ copyAudio:
 
 	srcFilename := ""
 	nid := 1
+	Loop, Files, % SDPath . "\" . targetFolderName . "\*"
+		nid++
+
 	Loop, % LV_GetCount()
 	{
-		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . nextFolder)
+		if (nid > 255) 
+		{
+			MsgBox, % "Error: Only 255 files per folder"
+			Return
+		}
+		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . targetFolderName)
 		LV_GetText(mode,A_Index)
 		LV_GetText(srcFilename,A_Index,2)
 		if (mode = "skip")
@@ -167,7 +182,7 @@ copyAudio:
 		}
 		filename .= ".mp3"
 
-		FileCopy, % AudioPath . "\" . srcFilename, % SDPath . "\" .  nextFolder . "\" . filename
+		FileCopy, % AudioPath . "\" . srcFilename, % SDPath . "\" .  targetFolderName . "\" . filename
 	}
 
 	checkSDCard(SDPath)
@@ -186,6 +201,17 @@ LVClick:
 	}
 return
 
+targetFoldertoPath(SDPath,targetFolder)
+{
+	; get position of selected element
+	targetFolder := targetFolder - 1
+	; if its zero use the new 
+	if (targetFolder = 0)
+		return nextFolder(SDPath)
+	Else
+		return Format("{1:02}",targetFolder)
+}
+
 smartRename(str)
 {
 	str := StrReplace(str, "ä","ae")
@@ -202,13 +228,38 @@ smartRename(str)
 
 nextFolder(SDPath)
 {
+	return Format("{1:02}",nFNumb(SDPath))
+}
+
+nFNumb(SDPath)
+{
 	Loop, 99
 		If not FileExist(SDPath . "\" . Format("{1:02}",A_Index))
-			return Format("{1:02}",A_Index)
+			return A_Index
+}
+
+TargetFolderDropDown(SDPath,preselected)
+{
+	if (preselected = "")
+		preselected := 1
+
+	max := nFNumb(SDPath)
+	str := "|" . Format("{1:02}",max) . " (New)|"
+	if (preselected = 1)
+		str .= "|"
+	Loop, % max - 1
+	{
+		str .= Format("{1:02}",A_Index) . "|"
+		if (A_Index = preselected - 1)
+			str .= "|"
+	}
+	return str	
 }
 
 checkSDCard(SDPath)
 {
+	Global targetFolder
+
 	errors := ""
 	; check mp3 folder
 	If not FileExist(SDPath . "\mp3") {
@@ -238,7 +289,9 @@ checkSDCard(SDPath)
 
 	; next folder
 	nextFolder(SDPath)
-	GuiControl, , NextFolder, % "Next folder: " . nextFolder(SDPath)
+	; GuiControl, , NextFolder, % "Next folder: " . nextFolder(SDPath)
+	GuiControl, , TargetFolder, % TargetFolderDropDown(SDPath,targetFolder)
+
 
 	; skipped folder names
 	empty := false
