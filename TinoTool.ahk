@@ -16,7 +16,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-VERSION := "0.9.0"
+VERSION := "0.10.0"
 AUDIOPROMPT := "Please select the audio folder"
 SDPROMPT := "Please select the SD Card"
 
@@ -31,6 +31,7 @@ IniRead, AudioPath, % iniPath, % "User", % "Audiopath", % AUDIOPROMPT
 IniRead, AsAdmin, % iniPath, % "User", % "AsAdmin", 0
 IniRead, WithFilename, % iniPath, % "User", % "WithFilename", 1
 IniRead, SmartRename, % iniPath, % "User", % "SmartRename", 1
+IniRead, Recursive, % iniPath, % "User", % "Recursive", 0
 
 ;; ************
 ;; run as admin
@@ -60,16 +61,18 @@ Gui, Add, Edit, w380 vAudioPathEdit section x+5 y+5 disabled -Multi R1, % AudioP
 Gui, Add, Button, gselectAudio X+m, Select Audio
 Gui, Add, Button, vCopyAudioBut gcopyAudio X20 Y+m, Copy Audio
 Gui, Add, Checkbox, vWithFilename checked%WithFilename% gSaveIni X+m, Append original filename to number 
-Gui, Add, Checkbox, vSmartRename checked%SmartRename% gSaveIni, Smart rename
-Gui, Add, Text, vNextFolder, Copy to:
+Gui, Add, Checkbox, vSmartRename checked%SmartRename% gSaveIni X+m, Smart rename
+Gui, Add, Checkbox, vRecursive checked%Recursive% gSaveIni X+m, include subfolders
+Gui, Add, Text, vNextFolder Xs+5, Copy to:
 Gui, Add, DropDownList, X+m Yp-3 vTargetFolder AltSubmit, New||01|02
 
 Gui, Font, bold
 Gui, Add, Text, , Order preview (Click header to reorder)
 Gui, Font,
 Gui, Add, Text, , (Doubleclick row to toggle copy/skip)
-Gui, Add, ListView, xs r10 w500 gLVClick AltSubmit, mode|Filename|Title|TrackNumber
+Gui, Add, ListView, xs r10 w500 gLVClick AltSubmit, mode|Filename|Title|TrackNumber|Path
 LV_ModifyCol(3, "Integer")
+LV_ModifyCol(4, 0)
 
 Gui, Tab, SD
 Gui, Add, Button, gRecheck X+10, Recheck
@@ -170,6 +173,8 @@ copyAudio:
 		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . targetFolderName)
 		LV_GetText(mode,A_Index)
 		LV_GetText(srcFilename,A_Index,2)
+		LV_GetText(srcPath,A_Index,5)
+		
 		if (mode = "skip")
 			continue
 		filename := Format("{1:03}",nid++)
@@ -182,7 +187,7 @@ copyAudio:
 		}
 		filename .= ".mp3"
 
-		FileCopy, % AudioPath . "\" . srcFilename, % SDPath . "\" .  targetFolderName . "\" . filename
+		FileCopy, % srcPath, % SDPath . "\" .  targetFolderName . "\" . filename
 	}
 
 	checkSDCard(SDPath)
@@ -323,15 +328,24 @@ checkSDCard(SDPath)
 
 readFileList(AudioPath) 
 {
+	global recursive
+
 	SB_SetText("Reading files")
 	LV_Delete()
 
-	Loop, Files, % AudioPath . "\*.mp3", F 
+	mode := "F"
+
+	if (recursive)
+		mode .= "R"
+
+	Loop, Files, % AudioPath . "\*.mp3", % mode
 	{
-		LV_Add("", "copy", A_LoopFileName, id3read(A_LoopFileFullPath,021),id3read(A_LoopFileFullPath,026))
+		LV_Add("", "copy", A_LoopFileName, id3read(A_LoopFileFullPath,021),id3read(A_LoopFileFullPath,026),A_LoopFileFullPath)
 	}
 	; auto-size
 	LV_ModifyCol()
+	; LV_ModifyCol(5, 0)
+
 	SB_SetText("Ready")
 }
 
@@ -340,6 +354,9 @@ SaveIni:
 
 	IniWrite, % AsAdmin, % iniPath, % "User", % "AsAdmin"
 	IniWrite, % WithFilename, % iniPath, % "User", % "WithFilename"
+	IniWrite, % Recursive, % iniPath, % "User", % "Recursive"
+	IniWrite, % SmartRename, % iniPath, % "User", % "SmartRename"
+	readFileList(AudioPath)
 Return
 
 GuiClose:
