@@ -16,8 +16,9 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-VERSION := "0.6.0"
+VERSION := "0.6.1"
 AUDIOPROMPT := "Please select the audio folder"
+COPYLOGFILE := "copylog.txt"
 
 ;; ***********
 ;; init config
@@ -147,16 +148,23 @@ copyAudio:
 
 	srcFilename := ""
 
+
+	folder := Substr(AudioPath,InStr(Audiopath, "\",false,0)+1)
+
+	FileAppend, % nextFolder . " -> " . folder . "`n" , % COPYLOGFILE
+
+
 	Loop, % LV_GetCount()
 	{
 		LV_GetText(srcFilename,A_Index)
-		MsgBox, % srcFilename
+		; MsgBox, % srcFilename
 		filename := Format("{1:03}",A_Index)
 		if (WithFilename)
 			filename .= "-" . srcFilename
 		filename .= ".mp3"
 
 		FileCopy, % AudioPath . "\" . srcFilename, % SDPath . "\" .  nextFolder . "\" . filename
+		
 		SB_SetText("Copying - " . A_Index . "/" . filesC . " to " . nextFolder)
 	}
 
@@ -229,6 +237,8 @@ checkSDCard(SDPath)
 readFileList(AudioPath) 
 {
 	SB_SetText("Reading files")
+
+	LV_Delete()
 
 	Loop, Files, % AudioPath . "\*.mp3", F 
 	{
