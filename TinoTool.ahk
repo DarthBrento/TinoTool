@@ -16,10 +16,10 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;; global settings
 ;; ***************
 
-
+VERSION := "0.11.0"
 AUDIOPROMPT := "Please select the audio folder"
-COPYLOGFILE := "copylog.txt"
 SDPROMPT := "Please select the SD Card"
+COPYLOG := "copylog.txt"
 
 ;; ***********
 ;; init config
@@ -164,11 +164,7 @@ copyAudio:
 	Loop, Files, % SDPath . "\" . targetFolderName . "\*"
 		nid++
 
-
-	folder := Substr(AudioPath,InStr(Audiopath, "\",false,0)+1)
-
-	FileAppend, % nextFolder . " -> " . folder . "`n" , % COPYLOGFILE
-
+	srcFolder := ""
 
 	Loop, % LV_GetCount()
 	{
@@ -182,6 +178,17 @@ copyAudio:
 		LV_GetText(srcFilename,A_Index,2)
 		LV_GetText(srcPath,A_Index,5)
 		
+
+		folderFile := SubStr(srcPath, InStr(srcPath, "\", false, 0, 2)+1)
+		folder := SubStr(folderFile,1, InStr(folderFile, "\") - 1)
+
+		if (srcFolder != folder)
+		{
+			srcFolder := folder
+			FileAppend, % targetFolderName . " -> " . folder , % COPYLOG
+		}
+
+
 		if (mode = "skip")
 			continue
 		filename := Format("{1:03}",nid++)
@@ -201,6 +208,42 @@ copyAudio:
 	GuiControl, -Disabled, CopyAudioBut
 	SB_SetText("ready")
 return
+
+LVClick:
+	If (A_GuiEvent = "A")
+	{
+		LV_GetText(mode, A_EventInfo,1)
+		If (mode = "copy")
+			LV_Modify(A_EventInfo, , "skip")
+		else
+			LV_Modify(A_EventInfo, , "copy")
+	}
+return
+
+targetFoldertoPath(SDPath,targetFolder)
+{
+	; get position of selected element
+	targetFolder := targetFolder - 1
+	; if its zero use the new 
+	if (targetFolder = 0)
+		return nextFolder(SDPath)
+	Else
+		return Format("{1:02}",targetFolder)
+}
+
+smartRename(str)
+{
+	str := StrReplace(str, "ä","ae")
+	str := StrReplace(str, "ö","oe")
+	str := StrReplace(str, "ü","ue")
+	str := StrReplace(str, "ß","ss")
+	; remove leading digits
+	str := RegExReplace(str, "^\d+","")
+	; remove non word characters and convert to camelCase
+	str := RegExReplace(str, "i)(\W+)(\w)","$U2")
+
+	return str
+}
 
 nextFolder(SDPath)
 {
